@@ -1,6 +1,9 @@
 lab_1/2_research
 lab_2/2_research
 lab_3/2_research
+*.rar
+*.zip
+*.tmp
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
