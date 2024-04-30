@@ -1,5 +1,5 @@
 class Random:
-    def __init__(self, seed=None):
+    def __init__(self, seed=42):
         """
         Инициализация генератора случайных чисел.
         :param seed: Начальное значение для генерации случайных чисел.
@@ -60,7 +60,7 @@ class Random:
         :param length: Длина числа.
         :return: Случайное число.
         """
-        return self.randint(2**(length-1), 2**length)
+        return self.randrange(2 ** (length - 1), 2 ** length)
 
     def generate_prime(self, length):
         """
@@ -76,7 +76,7 @@ class Random:
 
 class Math:
     def __init__(self):
-        self.random = Random(seed=42)
+        self.random = Random()
 
     def pow(self, x, y, z=None):
         """
@@ -118,6 +118,7 @@ class Math:
             return False
         if n <= 3:
             return True
+
         def miller_rabin(n, d):
             a = self.random.randint(2, n - 2)
             while self.gcd(a, n) != 1:
@@ -143,103 +144,78 @@ class Math:
                 return False
         return True
 
-    def mod_inverse(self, a, m):
-        """
-        Нахождение мультипликативно обратного числа a по модулю m.
-        :param a: Число.
-        :param m: Модуль.
-        :return: Мультипликативно обратное к a по модулю m.
-        """
-        m0, x0, x1 = m, 0, 1
-        while a > 1:
-            q = a // m
-            m, a = a % m, m
-            x0, x1 = x1 - q * x0, x0
-        return x1 + m0 if x1 < 0 else x1
 
-
-class RSA:
+class DiffieHellman:
     def __init__(self, key_length=512):
         """
-        Инициализация объекта RSA.
-        :param key_length: Длина ключа.
+        Инициализация объекта DiffieHellman с указанной длиной ключа.
+        :param key_length: Длина ключа (по умолчанию 512 бит).
         """
         self.key_length = key_length
-        self.random = Random(seed=42) # Установка начального значения для генератора случайных чисел
+        self.random = Random(seed=42)  # Установка начального значения для генератора случайных чисел
         self.math = Math()
 
-    def generate_keys(self, e):
+    def create_module_and_generator(self):
         """
-        Генерация открытого и закрытого ключей.
-        :param e: Показатель степени e.
-        :return: Открытый и закрытый ключи.
+        Генерация простого числа p и генератора g.
+        :return: Кортеж (p, g).
         """
+        p = self.random.generate_prime(512)
+        g = self.random.randint(2, p - 2)
 
-        # Выбираются два простых числа длины key_length
-        p = self.random.generate_prime(self.key_length)
-        q = self.random.generate_prime(self.key_length)
+        return p, g
 
-        # Вычисляется модуль, n = p * q
-        n = p * q
-
-        # Вычисляется значение функции Эйлера phi_n = (p - 1) * (q - 1)
-        phi_n = (p - 1) * (q - 1)
-
-        # Если phi_n не взаимно простое с e то выбирается новое phi_n
-        while self.math.gcd(e, phi_n) != 1:
-            p = self.random.generate_prime(self.key_length)
-            q = self.random.generate_prime(self.key_length)
-            n = p * q
-            phi_n = (p - 1) * (q - 1)
-
-        # Вычисляется число d, мультипликативно обратное к числу e
-        d = self.math.mod_inverse(e, phi_n)
-
-        print (p, q, n, phi_n, d)
-        return ((n, e), (n, d))
-
-    def encrypt(self, data, public_key):
+    def generate_keys(self, g, p):
         """
-        Шифрование данных.
-        :param data: Данные для шифрования.
-        :param public_key: Открытый ключ.
-        :return: Зашифрованные данные.
+        Генерация закрытого ключа и соответствующего ему открытого ключа.
+        :param g: Генератор.
+        :param p: Простое число.
+        :return: Кортеж (private_key, public_key).
         """
-        n, e = public_key
-        if not isinstance(data, int):
-            raise TypeError("Данные для шифрования должны быть целым числом")
-        if data <= 0:
-            raise ValueError("Данные для шифрования должны быть положительным целым числом")
-        return self.math.pow(data, e, n)
+        private_key = self.random.randrange(2, p - 1)
+        public_key = self.math.pow(g, private_key, p)
+        return private_key, public_key
 
-    def decrypt(self, encrypted_data, private_key):
+
+    def generate_shared_secret(self, other_public_key, private_key, p):
         """
-        Расшифрование данных.
-        :param encrypted_data: Зашифрованные данные.
+        Генерация общего секрета на основе открытого ключа другой стороны и собственного закрытого ключа.
+        :param other_public_key: Открытый ключ другой стороны.
         :param private_key: Закрытый ключ.
-        :return: Расшифрованные данные.
+        :param p: Простое число.
+        :return: Общий секрет.
         """
-        n, d = private_key
-        return self.math.pow(encrypted_data, d, n)
+        return self.math.pow(other_public_key, private_key, p)
 
 
 if __name__ == '__main__':
-    rsa = RSA()
+    diffie_hellman = DiffieHellman()
 
-    e = int(input("Введите показатель степени e (открытый ключ): "))
-    while not rsa.math.is_prime(e):
-        print("e должно быть простым числом")
-        e = int(input("Введите e: "))
+    # Генерация простого числа p и примитивного корня g
+    p, g = diffie_hellman.create_module_and_generator()
 
-    public_key, private_key = rsa.generate_keys(e)
-    print("Открытый ключ P={n, e}:", public_key)
+    print("Открытый канал связи:")
+    print("простой модуль p =", p)
+    print("генератор g =", g)
 
-    data = int(input("Введите данные для шифрования, целое число: "))
-    encrypted_data = rsa.encrypt(data, public_key)
+    print("\nПервый пользователь: генерирует свой приватный и публичный ключи:")
+    first_private_key, first_public_key = diffie_hellman.generate_keys(g, p)
+    print("Приватный ключ:", first_private_key)
+    print("Публичный ключ:", first_public_key)
 
-    print("Зашифрованные данные:", encrypted_data)
+    print("\nПервый пользователь: отправляет публичный ключ")
 
-    print("Закрытый ключ S={n, d}:", private_key)
-    decrypted_data = rsa.decrypt(encrypted_data, private_key)
+    print("\nВторой пользователь: генерирует свой приватный и публичный ключи:")
+    second_private_key, second_public_key = diffie_hellman.generate_keys(g, p)
+    print("Приватный ключ:", second_private_key)
+    print("Публичный ключ:", second_public_key)
 
-    print("Расшифрованные данные:", decrypted_data)
+    print("\nВторой пользователь: отправляет публичный ключ")
+
+    print("\nРасчет общего секретного ключа:")
+    first_shared_secret = diffie_hellman.generate_shared_secret(second_public_key, first_private_key, p)
+    second_shared_secret = diffie_hellman.generate_shared_secret(first_public_key, second_private_key, p)
+
+    print("Общий секретный ключ у Первого пользователя:", first_shared_secret)
+    print("Общий секретный ключ у Второго пользователя:", second_shared_secret)
+

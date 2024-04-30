@@ -5,28 +5,29 @@ class TestRSA(unittest.TestCase):
 
     def setUp(self):
         self.rsa = RSA()
+        self.rsa = RSA()
 
     def test_is_prime(self):
         # Проверяем, что функция is_prime корректно определяет простые числа
         primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
         for prime in primes:
-            self.assertTrue(self.rsa.is_prime(prime))
+            self.assertTrue(self.rsa.math.is_prime(prime))
 
     def test_generate_prime(self):
         # Проверяем, что generate_prime возвращает простое число
-        prime = self.rsa.generate_prime(512)
-        self.assertTrue(self.rsa.is_prime(prime))
+        prime = self.rsa.random.generate_prime(512)
+        self.assertTrue(self.rsa.math.is_prime(prime))
 
     def test_gcd(self):
         # Проверяем, что функция gcd возвращает наибольший общий делитель
-        self.assertEqual(self.rsa.gcd(10, 15), 5)
-        self.assertEqual(self.rsa.gcd(14, 63), 7)
-        self.assertEqual(self.rsa.gcd(24, 36), 12)
+        self.assertEqual(self.rsa.math.gcd(10, 15), 5)
+        self.assertEqual(self.rsa.math.gcd(14, 63), 7)
+        self.assertEqual(self.rsa.math.gcd(24, 36), 12)
 
     def test_mod_inverse(self):
         # Проверяем, что функция mod_inverse возвращает модульное обратное число
-        self.assertEqual(self.rsa.mod_inverse(3, 11), 4)
-        self.assertEqual(self.rsa.mod_inverse(17, 3120), 2753)
+        self.assertEqual(self.rsa.math.mod_inverse(3, 11), 4)
+        self.assertEqual(self.rsa.math.mod_inverse(17, 3120), 2753)
 
     def test_generate_keys(self):
         # Проверяем, что generate_keys возвращает корректные ключи
@@ -36,11 +37,59 @@ class TestRSA(unittest.TestCase):
         self.assertEqual(len(private_key), 2)
         self.assertEqual(public_key[1], e)
 
-    def test_encrypt_decrypt(self):
+    def test_encrypt_decrypt_1(self):
         # Проверяем, что данные можно зашифровать и расшифровать
         e = 65537
         public_key, private_key = self.rsa.generate_keys(e)
         data = 123456789
+        encrypted_data = self.rsa.encrypt(data, public_key)
+        decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
+        self.assertEqual(decrypted_data, data)
+
+    def test_encrypt_decrypt_2(self):
+        # Проверяем, что данные можно зашифровать и расшифровать
+        # 12 ^ 3 mod 55 = 23
+        # 23 ^ 27 mod55 = 12
+        e = 3
+        public_key, private_key = self.rsa.generate_keys(e)
+        data = 12
+        encrypted_data = self.rsa.encrypt(data, public_key)
+        decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
+        self.assertEqual(decrypted_data, data)
+
+    def test_encrypt_decrypt_2(self):
+        # Проверяем, что данные можно зашифровать и расшифровать
+        # 12 ^ 3 mod 55 = 23
+        # 23 ^ 27 mod55 = 12
+        e = 5
+        public_key, private_key = self.rsa.generate_keys(e)
+        data = 24
+        encrypted_data = self.rsa.encrypt(data, public_key)
+        decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
+        self.assertEqual(decrypted_data, data)
+
+    def test_encrypt_decrypt_3(self):
+        # Проверяем, что данные можно зашифровать и расшифровать
+        e = 5
+        public_key, private_key = self.rsa.generate_keys(e)
+        data = 31
+        encrypted_data = self.rsa.encrypt(data, public_key)
+        decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
+        self.assertEqual(decrypted_data, data)
+
+    def test_encrypt_decrypt_2(self):
+        # Проверяем, что данные можно зашифровать и расшифровать
+        e = 3
+        public_key, private_key = self.rsa.generate_keys(e)
+        data = 12
+        encrypted_data = self.rsa.encrypt(data, public_key)
+        decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
+        self.assertEqual(decrypted_data, data)
+    def test_encrypt_decrypt_2(self):
+        # Проверяем, что данные можно зашифровать и расшифровать
+        e = 3
+        public_key, private_key = self.rsa.generate_keys(e)
+        data = 12
         encrypted_data = self.rsa.encrypt(data, public_key)
         decrypted_data = self.rsa.decrypt(encrypted_data, private_key)
         self.assertEqual(decrypted_data, data)
@@ -147,14 +196,6 @@ class TestRSA(unittest.TestCase):
         e = 65537
         public_key, private_key = self.rsa.generate_keys(e)
         data = 1/3
-        with self.assertRaises(TypeError):
-            self.rsa.encrypt(data, public_key)
-
-    def test_encrypt_decrypt_negative_fraction_data(self):
-        # Проверяем, что отрицательные дробные данные можно зашифровать и расшифровать
-        e = 65537
-        public_key, private_key = self.rsa.generate_keys(e)
-        data = -1/3
         with self.assertRaises(TypeError):
             self.rsa.encrypt(data, public_key)
 
